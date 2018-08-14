@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -37,44 +40,69 @@ type Client struct {
 	conn *websocket.Conn
 
 	send chan []byte
+
+	ctx context.Context
+
+	logger *log.Entry
 }
 
-func (c *Client) run(logger *log.Entry, kafkaOpt KafkaOpt, key, value string) {
+func (c *Client) run(kafkaOpt KafkaOpt, key, value string) {
 	dataChan := make(chan []byte)
 	consumer, err := kafka.New(kafkaOpt.Brokers, kafkaOpt.Topic, dataChan)
 	if err != nil {
-		logger.Errorf("新建kafka消费者失败: %v", err)
+		c.logger.Errorf("新建kafka消费者失败: %v", err)
 		return
 	}
-	defer consumer.Close(logger)
-	logger.Infof("监听%v的topic[%v]", kafkaOpt.Brokers, kafkaOpt.Topic)
+	defer consumer.Close(c.logger)
+	c.logger.Infof("监听%v的topic[%v]", kafkaOpt.Brokers, kafkaOpt.Topic)
 
-	go consumer.Start(logger)
+	go consumer.Start(c.logger)
 
 	for {
 		select {
+		case <-c.ctx.Done():
+			return
 		case msg := <-dataChan:
 			if ok, err := c.filter(msg, key, value); ok && err == nil {
 				c.send <- msg
-				logger.Infof("%v", string(msg))
+				c.logger.Debugf("获取消息: %v", string(msg))
 			} else if err != nil {
-				logger.Warnf("处理消息%v异常: %v", string(msg), err)
+				c.logger.Warnf("处理消息%v异常: %v", string(msg), err)
 			}
 		}
 	}
 }
 
-func (c *Client) sendMsg() {
+func (c *Client) sendMsg(cancel context.CancelFunc) {
+	defer cancel()
+
 	for {
 		select {
+		case <-c.ctx.Done():
+			return
 		case d := <-c.send:
-			c.conn.WriteMessage(websocket.TextMessage, d)
+			dSend, err := c.parseLog(d)
+			if err != nil {
+				c.logger.Errorf("解析message[%v]异常: %v", string(d), err)
+				continue
+			}
+			// c.logger.Debugf("发送日志: {%v}", strings.TrimSuffix(string(dSend), "\n"))
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			err = c.conn.WriteMessage(websocket.TextMessage, dSend)
+			if err != nil {
+				if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+					c.logger.Errorf("websocket 关闭: %v", err)
+					return
+				}
+				c.logger.Errorf("发送message[%v]异常: %v", string(dSend), err)
+				continue
+			}
 		}
 	}
 }
 
-func (c *Client) filter(data []byte, key, value string) (bool, error) {
-	var msg map[string]string
+func (c *Client) filter(data []byte, key string, value interface{}) (bool, error) {
+	var msg map[string]interface{}
 
 	err := json.Unmarshal(data, &msg)
 	if err != nil {
@@ -85,28 +113,153 @@ func (c *Client) filter(data []byte, key, value string) (bool, error) {
 		return true, nil
 	}
 
-	if v, ok := msg[key]; ok && (value == "" || v == value) {
+	if v, ok := msg[key]; ok && (value == nil || v == value) {
 		return true, nil
 	}
 	return false, nil
 }
 
+func (c *Client) parseLog(data []byte) ([]byte, error) {
+	var e map[string]interface{}
+	json.Unmarshal(data, &e)
+	// c.logger.Debugf("获得logrus的entry%v", e)
+	var host, l, msg, logTime string
+	if v, ok := e["host"]; ok {
+		host = v.(string)
+		delete(e, "host")
+	}
+	if _, ok := e["topic"]; ok {
+		delete(e, "topic")
+	}
+	if v, ok := e["level"]; ok {
+		l = v.(string)
+		delete(e, "level")
+	}
+	if v, ok := e["msg"]; ok {
+		msg = v.(string)
+		delete(e, "msg")
+	}
+	if v, ok := e["time"]; ok {
+		logTime = v.(string)
+		delete(e, "time")
+	}
+
+	keys := make([]string, 0, len(e))
+	for k := range e {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	buffer := bytes.Buffer{}
+	for _, k := range keys {
+		buffer.WriteString(k)
+		buffer.WriteString("=")
+
+		switch v := e[k].(type) {
+		case string:
+			buffer.WriteString(v)
+		case error:
+			buffer.WriteString(v.Error())
+		default:
+			fmt.Fprint(&buffer, v)
+		}
+		buffer.WriteString(" ")
+	}
+	var level string
+	switch l {
+	case "info":
+		level = "INFO"
+	case "warning":
+		level = "WARN"
+	case "debug":
+		level = "DEBU"
+	case "error":
+		level = "ERRO"
+	case "panic":
+		level = "PANI"
+	case "fatal":
+		level = "FATA"
+	default:
+		level = "UNKNOWN"
+	}
+	line := fmt.Sprintf("%s\t[%v]\t[%s]\t%-80s\t%s\n", level, logTime, host, msg, buffer.String())
+
+	return []byte(line), nil
+}
+
 // ServeWs ...
 func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt KafkaOpt, filterOpt FilterOpt) {
 	defer logger.Infof("websocket connection from %v closed", r.RemoteAddr)
-	if logger == nil {
-		logger = log.New().WithField("websocket from", r.RemoteAddr)
-	}
+	logger.Debugf("过滤配置: %v", filterOpt)
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Errorf("websocket error: %v", err)
 		return
 	}
+	defer conn.Close()
+	ctxx, cancel := context.WithCancel(context.Background())
 
 	client := &Client{
-		conn: conn,
-		send: make(chan []byte, 256),
+		conn:   conn,
+		send:   make(chan []byte, 256),
+		ctx:    ctxx,
+		logger: logger,
 	}
+	defer client.Close()
 
-	client.run(logger, kafkaOpt, filterOpt.Key, filterOpt.Value)
+	go client.sendMsg(cancel)
+	go client.ping(cancel)
+	go client.pong(cancel)
+
+	client.logger.Debug("websocket 开启")
+	client.run(kafkaOpt, filterOpt.Key, filterOpt.Value)
+}
+
+func (c *Client) pong(cancel context.CancelFunc) {
+	defer cancel()
+
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	for {
+		_, message, err := c.conn.ReadMessage()
+		if err != nil {
+			c.logger.Error("pong error: ", err)
+			return
+		}
+		if bytes.Compare(message, []byte("pong")) == 0 {
+			c.conn.SetReadDeadline(time.Now().Add(pongWait))
+			c.logger.Debugf("pong")
+		}
+	}
+}
+
+func (c *Client) ping(cancel context.CancelFunc) {
+	ticker := time.NewTicker(pingPeriod)
+	defer ticker.Stop()
+	defer cancel()
+	for {
+		select {
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			// if err := c.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait)); err != nil {
+			// 	c.logger.Error("ping: ", err)
+			// 	cancel()
+			// 	return
+			// }
+			if err := c.conn.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
+				c.logger.Error("ping error: ", err)
+				cancel()
+				return
+			}
+		case <-c.ctx.Done():
+			c.logger.Debugf("ping 停止")
+			return
+		}
+	}
+}
+
+// Close ...
+func (c *Client) Close() {
+	close(c.send)
+	c.logger.Debugf("websocket 关闭")
 }

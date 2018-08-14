@@ -16,3 +16,4 @@ logs
 *.tar
 *.tar.gz
 build
+vendor
