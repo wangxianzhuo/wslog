@@ -46,7 +46,7 @@ type Client struct {
 	logger *log.Entry
 }
 
-func (c *Client) run(kafkaOpt KafkaOpt, key, value string) {
+func (c *Client) run(kafkaOpt KafkaOpt, filterMap map[string]interface{}) {
 	dataChan := make(chan []byte)
 	consumer, err := kafka.New(kafkaOpt.Brokers, kafkaOpt.Topic, dataChan)
 	if err != nil {
@@ -63,7 +63,7 @@ func (c *Client) run(kafkaOpt KafkaOpt, key, value string) {
 		case <-c.ctx.Done():
 			return
 		case msg := <-dataChan:
-			if ok, err := c.filter(msg, key, value); ok && err == nil {
+			if ok, err := c.filter(msg, filterMap); ok && err == nil {
 				c.send <- msg
 				c.logger.Debugf("获取消息: %v", string(msg))
 			} else if err != nil {
@@ -101,7 +101,8 @@ func (c *Client) sendMsg(cancel context.CancelFunc) {
 	}
 }
 
-func (c *Client) filter(data []byte, key string, value interface{}) (bool, error) {
+func (c *Client) filter(data []byte, filterMap map[string]interface{}) (bool, error) {
+	// func (c *Client) filter(data []byte, key string, value interface{}) (bool, error) {
 	var msg map[string]interface{}
 
 	err := json.Unmarshal(data, &msg)
@@ -109,12 +110,14 @@ func (c *Client) filter(data []byte, key string, value interface{}) (bool, error
 		return false, fmt.Errorf("过滤消息%v异常: %v", string(data), err)
 	}
 
-	if key == "" {
-		return true, nil
+	if len(filterMap) < 1 {
+		return false, nil
 	}
 
-	if v, ok := msg[key]; ok && (value == nil || v == value) {
-		return true, nil
+	for k, v := range filterMap {
+		if value, ok := msg[k]; ok && (value == nil || v == value) {
+			return true, nil
+		}
 	}
 	return false, nil
 }
@@ -188,9 +191,9 @@ func (c *Client) parseLog(data []byte) ([]byte, error) {
 }
 
 // ServeWs ...
-func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt KafkaOpt, filterOpt FilterOpt) {
+func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt KafkaOpt, filterMap map[string]interface{}) {
 	defer logger.Infof("websocket connection from %v closed", r.RemoteAddr)
-	logger.Debugf("过滤配置: %v", filterOpt)
+	logger.Debugf("过滤配置: %v", filterMap)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -213,7 +216,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt
 	go client.pong(cancel)
 
 	client.logger.Debug("websocket 开启")
-	client.run(kafkaOpt, filterOpt.Key, filterOpt.Value)
+	client.run(kafkaOpt, filterMap)
 }
 
 func (c *Client) pong(cancel context.CancelFunc) {

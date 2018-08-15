@@ -37,31 +37,20 @@ func main() {
 
 func logServer(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	gatherDeviceID := r.FormValue("gatherDevice")
-	correspondenceID := r.FormValue("correspondence")
+	filterMap := make(map[string]interface{})
 
-	if correspondenceID != "" {
-		server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
-			Topic:   topic,
-			Brokers: kafkaBrokerList,
-		}, server.FilterOpt{
-			Key:   "correspondence",
-			Value: correspondenceID,
-		})
-	} else if gatherDeviceID != "" {
-		server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
-			Topic:   topic,
-			Brokers: kafkaBrokerList,
-		}, server.FilterOpt{
-			Key:   "device",
-			Value: gatherDeviceID,
-		})
-	} else {
-		server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
-			Topic:   topic,
-			Brokers: kafkaBrokerList,
-		}, server.FilterOpt{})
+	for k, v := range r.Form {
+		if k == "" {
+			continue
+		}
+
+		filterMap[k] = v
 	}
+
+	server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
+		Topic:   topic,
+		Brokers: kafkaBrokerList,
+	}, filterMap)
 }
 
 func parseKafkaBrokerList() {

@@ -5,9 +5,3 @@ type KafkaOpt struct {
 	Brokers []string
 	Topic   string
 }
-
-// FilterOpt 过滤配置
-type FilterOpt struct {
-	Key   string
-	Value string
-}
