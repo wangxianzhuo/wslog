@@ -9,6 +9,7 @@ import (
 
 	"github.com/wangxianzhuo/logrus-conf"
 
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"github.com/wangxianzhuo/wslog/server"
 )
@@ -30,7 +31,11 @@ func main() {
 	logconf.Configure()
 	logconf.ConfigureLocalFileHook()
 
-	http.HandleFunc("/log", logServer)
+	r := mux.NewRouter()
+	r.HandleFunc("/log/{topic}", logServer).Methods("GET")
+	http.Handle("/", r)
+
+	// http.HandleFunc("/log/:topic", logServer)
 	log.Infof("server %v start", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
@@ -44,11 +49,20 @@ func logServer(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		filterMap[k] = v
+		if len(v) > 0 {
+			filterMap[k] = v[0]
+		}
+	}
+
+	vars := mux.Vars(r)
+	t, ok := vars["topic"]
+	if !ok {
+		log.Debugf("no topic, use default[%v]", topic)
+		t = topic
 	}
 
 	server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
-		Topic:   topic,
+		Topic:   t,
 		Brokers: kafkaBrokerList,
 	}, filterMap)
 }
