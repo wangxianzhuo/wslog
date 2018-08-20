@@ -16,7 +16,7 @@ const (
 	// 发送数据超时时长
 	writeWait = 10 * time.Second
 	// 等待接收ping帧的时长，超时则关闭连接
-	pingWait = 60 * time.Second
+	pingWait = 30 * time.Second
 	// websocket连接最长允许时间
 	logTimeout = 30 * time.Minute
 )
@@ -51,6 +51,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt
 		conn.SetReadDeadline(time.Now().Add(pingWait))
 		return nil
 	})
+	conn.SetReadDeadline(time.Now().Add(pingWait))
 
 	// 设置带超时的context
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(logTimeout))

@@ -13,7 +13,7 @@ const (
 	// 发送数据超时时长
 	writeWait = 10 * time.Second
 	// 等待接收ping帧的时长，超时则关闭连接
-	pingWait = 60 * time.Second
+	pingWait = 30 * time.Second
 )
 
 // Session 会话
