@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/eapache/go-resiliency"
@@ -23,7 +23,7 @@
   branch = "master"
   name = "github.com/eapache/go-xerial-snappy"
   packages = ["."]
-  revision = "2b4bcfdd67a0b5a9b59fcbf9ae42046a575d3811"
+  revision = "776d5712da21bc4762676d614db1d8a64f4238b0"
 
 [[projects]]
   name = "github.com/eapache/queue"
@@ -36,6 +36,18 @@
   name = "github.com/golang/snappy"
   packages = ["."]
   revision = "2e65f85255dbc3072edf28d6b5b8efc472979f5a"
+
+[[projects]]
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
+  version = "v1.1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
+  version = "v1.6.2"
 
 [[projects]]
   name = "github.com/gorilla/websocket"
@@ -95,7 +107,7 @@
   branch = "master"
   name = "github.com/tracer0tong/kafkalogrus"
   packages = ["."]
-  revision = "dc3d3eacccedb3adb5abddfa2da92d096a78e48a"
+  revision = "290bb4d4d549880fb29bf10cbe467cbb43801eeb"
 
 [[projects]]
   branch = "master"
@@ -129,7 +141,7 @@
     "acme/autocert",
     "ssh/terminal"
   ]
-  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+  revision = "aabede6cba87e37f413b3e60ebfc214f8eeca1b0"
 
 [[projects]]
   branch = "master"
@@ -138,11 +150,11 @@
     "unix",
     "windows"
   ]
-  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+  revision = "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "42a10c3ba9ea81fa0dca609c17f28bd7cbf8a6d32a9347fc99d16eb87d3583e8"
+  inputs-digest = "a4ef8d63858b60724dea746acbfa87b1fea2b4491d4c31c92d1f88be82567642"
   solver-name = "gps-cdcl"
   solver-version = 1

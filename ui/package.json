@@ -1,0 +1,20 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "ws log from kafka ui",
+  "main": "app.js",
+  "scripts": {
+    "test": "WS_LOG_WRAPPER=localhost:3000/ws/log WS_LOG_SERVER=localhost:9000 ADDRESS=3001 node app.js",
+    "start": "node app.js"
+  },
+  "author": "xianzhuo",
+  "license": "MIT",
+  "dependencies": {
+    "koa": "^2.5.2",
+    "koa-logger": "^3.2.0",
+    "koa-router": "^7.4.0",
+    "koa-views": "^6.1.4",
+    "nunjucks": "^3.1.3",
+    "request": "^2.88.0"
+  }
+}
