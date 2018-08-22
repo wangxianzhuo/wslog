@@ -1,20 +1,11 @@
-# Wslog
-从kafka取日志，通过ws打印到网页
+# Websocket log print
+> 从kafka中取出K-V形式大json格式日志，打印到web上
 
-## Usage
+## server
+> 提供监听`log`开头的topic的`websocket`通讯，将收到的消息格式化后发送到`websocket`客户端
 
-```shell
-wslog --debug
-```
+## wrapper
+> 将和`server`的`websocket`通讯的控制部分封装成可与`JavaScript`原生`websocket`进行通讯
 
-## Build
-
-```shell
-go build -o wslog main.go
-```
-
-或
-
-```shell
-./build.sh
-```
+## ui
+> 日志打印页面

@@ -8,8 +8,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
-	"github.com/wangxianzhuo/wslog/kafka"
-	"github.com/wangxianzhuo/wslog/session"
+	"github.com/wangxianzhuo/wslog/server/kafka"
+	"github.com/wangxianzhuo/wslog/server/session"
 )
 
 const (

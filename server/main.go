@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"github.com/wangxianzhuo/wslog/server"
+	"github.com/wangxianzhuo/wslog/server/server"
 )
 
 var addr string
@@ -32,11 +33,10 @@ func main() {
 	logconf.ConfigureLocalFileHook()
 
 	r := mux.NewRouter()
-	r.HandleFunc("/log/{topic}", logServer).Methods("GET")
+	r.HandleFunc("/ws/log/{topic}", logServer).Methods("GET")
+	r.HandleFunc("/log/topics", getAllLogTopics).Methods("GET")
 	http.Handle("/", r)
-
-	// http.HandleFunc("/log/:topic", logServer)
-	log.Infof("server %v start", addr)
+	log.Infof("wslog server %v start", addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
 }
 
@@ -61,6 +61,12 @@ func logServer(w http.ResponseWriter, r *http.Request) {
 		t = topic
 	}
 
+	if !checkTopic(t) {
+		fmt.Fprintf(w, "%v", errorMsg("传入非法topic: "+t))
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
 		Topic:   t,
 		Brokers: kafkaBrokerList,
@@ -82,4 +88,41 @@ func parseKafkaBrokerList() {
 	for i, broker := range kafkaBrokerList {
 		kafkaBrokerList[i] = strings.TrimSpace(broker)
 	}
+}
+
+func getAllLogTopics(w http.ResponseWriter, r *http.Request) {
+	topics, err := server.GetTopics(kafkaBrokerList)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", errorMsg("获取topics出错"))
+		log.Errorf("获取topics异常: %v", err)
+		return
+	}
+	checkedTopics := make([]string, 0)
+	for _, t := range topics {
+		if checkTopic(t) {
+			checkedTopics = append(checkedTopics, t)
+		}
+	}
+	t, err := json.Marshal(checkedTopics)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%v", errorMsg("打包topics出错"))
+		log.Errorf("打包topics[%v]异常: %v", topics, err)
+		return
+	}
+	fmt.Fprintf(w, "%v", string(t))
+	w.WriteHeader(http.StatusOK)
+}
+
+func errorMsg(msg string) string {
+	m, _ := json.Marshal(map[string]string{"msg": msg})
+	return string(m)
+}
+
+func checkTopic(topic string) bool {
+	if len(topic) >= 3 && topic[:len("log")] == "log" {
+		return true
+	}
+	return false
 }

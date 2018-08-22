@@ -1,0 +1,8 @@
+web
+build
+node_modules
+
+.eslintrc.js
+build.sh
+Dockerfile
+README.md

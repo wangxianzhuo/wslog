@@ -1,0 +1,42 @@
+version: '2.1'
+
+services:
+  server:
+    image: wslog-server
+    container_name: wslog-server
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./logs:/usr/app/logs
+    command: --debug
+    networks:
+      network1:
+        aliases:
+          - ws.log.server
+  wrapper:
+    image: wslog-wrapper
+    container_name: wslog-wrapper
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./wrapper-config.js:/usr/app/config.js:ro
+    networks:
+      network1:
+        aliases:
+          - ws.log.wrapper
+  ui:
+    image: wslog-ui
+    container_name: wslog-ui
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+      - ./ui-config.js:/usr/app/config.js:ro
+    ports:
+      - "3000:3000"
+    networks:
+      network1:
+        aliases:
+          - ws.log.ui
+networks:
+  network1:
+     name: wslog_net
