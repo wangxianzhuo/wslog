@@ -22,7 +22,6 @@ var kafkaBrokerList []string
 func init() {
 	flag.StringVar(&addr, "server-address", ":9000", "服务监听地址")
 	flag.StringVar(&kafkaBrokers, "kafka-brokers", "localhost:9092", "消息队列地址,例如 <addr1>, <addr2>,...,<addrn>")
-	flag.StringVar(&topic, "kafka-topic", "log_msg", "kafka topic")
 }
 
 func main() {

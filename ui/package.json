@@ -4,7 +4,7 @@
   "description": "ws log from kafka ui",
   "main": "app.js",
   "scripts": {
-    "test": "WG_LOG_BASE_HOST=localhost:9000/ws/log LOG_BASE_HOST=localhost:9000 node app.js",
+    "test": "WS_LOG_WRAPPER=localhost:3000/ws/log WS_LOG_SERVER=localhost:9000 ADDRESS=3001 node app.js",
     "start": "node app.js"
   },
   "author": "xianzhuo",

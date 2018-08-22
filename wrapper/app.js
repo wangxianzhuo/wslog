@@ -20,7 +20,7 @@ router.get('/log/:topic', (ctx, next) => {
     querys = ('?' + querys)
   }
   try {
-    session = ws.connect('ws://'+configs.wslogServer + '/ws/log' + topic + querys)
+    session = ws.connect('ws://' + configs.wslogServer + '/ws/log' + topic + querys)
   } catch (err) {
     console.error(err)
     next()
@@ -47,7 +47,7 @@ router.get('/log/:topic', (ctx, next) => {
     console.log(new Date() + ' send ping')
   })
 
-  session.on('error', function error (error) {
+  session.on('error', function error(error) {
     console.error(new Date() + ' error: ' + error)
     if (session != null) {
       session.close()
@@ -70,5 +70,5 @@ router.get('/log/:topic', (ctx, next) => {
 app.ws.use(logger())
 app.ws.use(router.routes())
 
-app.listen('3000')
-console.log('wslog wrapper start [:3000]')
+app.listen(configs.address)
+console.log('wslog wrapper start [' + configs.address + ']')

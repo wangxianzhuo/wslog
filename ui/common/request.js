@@ -2,13 +2,14 @@
 
 const request = require('request')
 
-module.exports = function(options) {
+module.exports = function (options) {
     return new Promise((resolve, reject) => {
         request(options, (err, res, body) => {
-            if(err) {
-                resolve(new Response(500, {message: '请求接口服务器异常'}));
+            if (err) {
+                resolve(new Response(500, { message: '请求接口服务器异常' }));
             } else {
-                if(body) {
+                if (body) {
+                    // console.log(body)
                     resolve(new Response(res.statusCode, JSON.parse(body)));
                 } else {
                     resolve(new Response(res.statusCode));

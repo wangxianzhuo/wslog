@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "WS_LOG_SERVER=localhost:9000 ADDRESS=3000 node app.js",
     "start": "node app.js"
   },
   "keywords": [],

@@ -10,29 +10,27 @@ const router = new Router()
 
 app.use(logger())
 
-app.use(views(__dirname+'/views',{
-    map:{
+app.use(views(__dirname + '/views', {
+    map: {
         njk: 'nunjucks'
     }
 }))
 
-router.get('/logs', async (ctx, next)=>{
-    ts = await topic.getTopics()
-    await ctx.render('logs.njk', {
-        topics: ts,
-        wslogWrapper: configs.configs.wslogWrapper
-    })
+router.get('/logs', async (ctx, next) => {
+    try {
+        ts = await topic.getTopics()
+        await ctx.render('logs.njk', {
+            topics: ts,
+            wslogWrapper: configs.configs.wslogWrapper
+        })
+    } catch (err) {
+        console.log(err)
+        ctx.status = 500
+        ctx.body = err.message
+    }
 })
 
-app.use(async (ctx, next)=>{
-    var ctx = this;
-    this.error = (err, status) => {
-        ctx.status = status || 500;
-        ctx.body = err;
-    };
-    await next()
-})
 app.use(router.routes())
 
-app.listen('3000')
-console.log('wslog ui start [:3000]')
+app.listen(configs.configs.address)
+console.log('wslog ui start [' + configs.configs.address + ']')
