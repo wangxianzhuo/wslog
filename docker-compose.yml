@@ -12,7 +12,7 @@ services:
     networks:
       network1:
         aliases:
-          - ws.log.server
+          - server.ws.log
   wrapper:
     image: wslog-wrapper
     container_name: wslog-wrapper
@@ -23,7 +23,7 @@ services:
     networks:
       network1:
         aliases:
-          - ws.log.wrapper
+          - wrapper.ws.log
   ui:
     image: wslog-ui
     container_name: wslog-ui
@@ -36,7 +36,7 @@ services:
     networks:
       network1:
         aliases:
-          - ws.log.ui
+          - ui.ws.log
 networks:
   network1:
      name: wslog_net

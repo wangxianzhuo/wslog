@@ -20,7 +20,7 @@ router.get('/log/:topic', (ctx, next) => {
     querys = ('?' + querys)
   }
   try {
-    session = ws.connect('ws://' + configs.wslogServer + '/ws/log' + topic + querys)
+    session = ws.connect('ws://' + configs.wslogServer + '/ws/log/' + topic + querys)
   } catch (err) {
     console.error(err)
     next()

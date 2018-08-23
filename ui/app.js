@@ -2,7 +2,7 @@ const Koa = require('koa')
 const Router = require('koa-router')
 const logger = require('koa-logger')
 const views = require('koa-views')
-const configs = require('./configs')
+const configs = require('./config')
 const topic = require('./service/topic')
 
 const app = new Koa()

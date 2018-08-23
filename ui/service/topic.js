@@ -1,5 +1,5 @@
 const request = require('../common/request')
-const configs = require('../configs')
+const configs = require('../config')
 
 module.exports.getTopics = async () => {
     const resq = await request({
