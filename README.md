@@ -1,5 +1,5 @@
 # Websocket log print
-> 从kafka中取出K-V形式大json格式日志，打印到web上
+> 从kafka中取出K-V形式的json格式日志，打印到web上
 
 ## server
 > 提供监听`log`开头的topic的`websocket`通讯，将收到的消息格式化后发送到`websocket`客户端
