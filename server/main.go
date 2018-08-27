@@ -16,12 +16,13 @@ import (
 )
 
 var addr string
-var kafkaBrokers, topic string
+var kafkaBrokers, topic, kafkaClientID string
 var kafkaBrokerList []string
 
 func init() {
 	flag.StringVar(&addr, "server-address", ":9000", "服务监听地址")
 	flag.StringVar(&kafkaBrokers, "kafka-brokers", "localhost:9092", "消息队列地址,例如 <addr1>, <addr2>,...,<addrn>")
+	flag.StringVar(&kafkaClientID, "kafka-client-id", "wslog_server", "kafka消费者客户端编码")
 }
 
 func main() {
@@ -67,8 +68,9 @@ func logServer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	server.ServeWs(w, r, log.WithField("websocket from", r.RemoteAddr), server.KafkaOpt{
-		Topic:   t,
-		Brokers: kafkaBrokerList,
+		Topic:    t,
+		Brokers:  kafkaBrokerList,
+		ClientID: kafkaClientID,
 	}, filterMap)
 }
 

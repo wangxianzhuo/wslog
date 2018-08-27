@@ -16,8 +16,11 @@ type Consumer struct {
 }
 
 // New ...
-func New(address []string, topic string, dataChan chan []byte) (*Consumer, error) {
-	consumer, err := sarama.NewConsumer(address, nil)
+func New(address []string, topic, clientID string, dataChan chan []byte) (*Consumer, error) {
+	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.ClientID = clientID
+
+	consumer, err := sarama.NewConsumer(address, kafkaConfig)
 	if err != nil {
 		return nil, fmt.Errorf("新建到%v的topic为[%v]的kafka consumer 异常: %v", address, topic, err)
 	}

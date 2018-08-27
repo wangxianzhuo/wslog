@@ -77,7 +77,7 @@ func ServeWs(w http.ResponseWriter, r *http.Request, logger *log.Entry, kafkaOpt
 	// 启动会话执行线程
 	s.Run(func() error {
 		dataChan := make(chan []byte)
-		consumer, err := kafka.New(kafkaOpt.Brokers, kafkaOpt.Topic, dataChan)
+		consumer, err := kafka.New(kafkaOpt.Brokers, kafkaOpt.Topic, kafkaOpt.ClientID, dataChan)
 		if err != nil {
 			return fmt.Errorf("新建kafka消费者失败: %v", err)
 		}
